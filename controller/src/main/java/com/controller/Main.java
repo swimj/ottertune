@@ -1,15 +1,16 @@
 package com.controller;
 
 import com.controller.collectors.DBCollector;
+import com.controller.collectors.MySQLCollector;
 import com.controller.collectors.PostgresCollector;
 import com.controller.util.JSONUtil;
 import org.json.simple.JSONObject;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Controller main.
@@ -56,10 +57,15 @@ public class Main {
             case "postgres":
                 collector = new PostgresCollector(dbURL, username, password);
                 break;
+            case "mysql":
+                collector = new MySQLCollector(dbURL, username, password);
+                break;
             default:
                 System.out.println("Please specify database type!");
                 return;
         }
+        String outputDir = dbtype;
+        new File("output/" + outputDir).mkdir();
 
         try {
             // summary json obj
@@ -69,11 +75,11 @@ public class Main {
             summary.put("database_version", collector.collectVersion());
 
             // first collection (before queries)
-            PrintWriter metricsWriter = new PrintWriter("output/metrics_before.json", "UTF-8");
+            PrintWriter metricsWriter = new PrintWriter("output/" + outputDir+ "/metrics_before.json", "UTF-8");
             metricsWriter.println(collector.collectMetrics());
             metricsWriter.flush();
             metricsWriter.close();
-            PrintWriter knobsWriter = new PrintWriter("output/knobs.json", "UTF-8");
+            PrintWriter knobsWriter = new PrintWriter("output/"+ outputDir + "/knobs.json", "UTF-8");
             knobsWriter.println(collector.collectParameters());
             knobsWriter.flush();
             knobsWriter.close();
@@ -88,12 +94,12 @@ public class Main {
             summary.put("end_time", System.currentTimeMillis());
 
             // write summary JSONObject into a JSON file
-            PrintWriter summaryout = new PrintWriter("output/summary.json","UTF-8");
+            PrintWriter summaryout = new PrintWriter("output/" + outputDir + "/summary.json","UTF-8");
             summaryout.println(JSONUtil.format(summary.toString()));
             summaryout.flush();
 
             // second collection (after queries)
-            PrintWriter metricsWriterFinal = new PrintWriter("output/metrics_after.json", "UTF-8");
+            PrintWriter metricsWriterFinal = new PrintWriter("output/" + outputDir + "/metrics_after.json", "UTF-8");
             metricsWriterFinal.println(collector.collectMetrics());
             metricsWriterFinal.flush();
             metricsWriterFinal.close();
@@ -101,12 +107,12 @@ public class Main {
             e.printStackTrace();
         }
 
-        Map<String, String> outfiles = new HashMap<>();
-        outfiles.put("knobs", "output/knobs.json");
-        outfiles.put("metrics_before", "output/metrics_before.json");
-        outfiles.put("metrics_after", "output/metrics_after.json");
-        outfiles.put("summary", "output/summary.json");
-        ResultUploader.upload(uploadURL, uploadCode, outfiles);
+//        Map<String, String> outfiles = new HashMap<>();
+//        outfiles.put("knobs", "output/" + outputDir + "/knobs.json");
+//        outfiles.put("metrics_before", "output/"+ outputDir + "/metrics_before.json");
+//        outfiles.put("metrics_after", "output/"+outputDir+"metrics_after.json");
+//        outfiles.put("summary", "output/"+outputDir+"summary.json");
+//        ResultUploader.upload(uploadURL, uploadCode, outfiles);
 
     }
 }
