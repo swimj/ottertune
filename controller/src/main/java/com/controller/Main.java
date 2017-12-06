@@ -32,6 +32,10 @@ public class Main {
             switch (flag) {
                 case "-t" :
                     time = Integer.valueOf(val);
+                    if(time < 0) {
+                        System.out.println("Invalid time would be ignored");
+                        time = DEFAULT_TIME;
+                    }
                     break;
                 default:
                     System.out.println("Invalid flag: " + flag);
@@ -52,6 +56,8 @@ public class Main {
         // uploader
         String uploadCode = input.get("upload_code");
         String uploadURL = input.get("upload_url");
+        // workload
+        String workloadName = input.get("workload_name");
 
         switch (dbtype) {
             case "postgres":
@@ -92,6 +98,9 @@ public class Main {
 
             // record end time
             summary.put("end_time", System.currentTimeMillis());
+
+            // record workload_name
+            summary.put("workload_name", workloadName);
 
             // write summary JSONObject into a JSON file
             PrintWriter summaryout = new PrintWriter("output/" + outputDir + "/summary.json","UTF-8");

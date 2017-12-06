@@ -8,7 +8,8 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- *
+ * Test for DBCollectorTest.
+ * @author Shuli
  */
 public class DBCollectorTest {
     @Test
