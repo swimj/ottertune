@@ -13,7 +13,8 @@ from sklearn.preprocessing import StandardScaler
 
 from analysis.gp import GPRNP
 from analysis.gp_tf import GPRGD
-from analysis.preprocessing import Bin
+from analysis.preprocessing import Bin, DummyEncoder
+from analysis.constraints import ParamConstraintHelper
 from website.models import PipelineData, PipelineRun, Result, Workload, KnobCatalog, MetricCatalog
 from website.parser import Parser
 from website.types import PipelineTaskType
@@ -246,8 +247,18 @@ def configuration_recommendation(target_data):
     y_workload = y_workload[dups_filter, :]
     rowlabels_workload = rowlabels_workload[dups_filter]
 
-    # Combine target & workload Xs then scale
+    # Combine target & workload Xs for preprocessing
     X_matrix = np.vstack([X_target, X_workload])
+
+    # Dummy encode categorial variables
+    categorical_info = DataUtil.dummy_encoder_helper(X_columnlabels)
+    dummy_encoder = DummyEncoder(categorical_info['n_values'],
+                                 categorical_info['categorical_features'],
+                                 categorical_info['cat_columnlabels'],
+                                 categorical_info['noncat_columnlabels'])
+    X_matrix = dummy_encoder.fit_transform(X_matrix)
+
+    # Scale to N(0, 1)
     X_scaler = StandardScaler()
     X_scaled = X_scaler.fit_transform(X_matrix)
     if y_target.shape[0] < 5:  # FIXME
@@ -271,6 +282,9 @@ def configuration_recommendation(target_data):
             y_target_scaler = None
             y_workload_scaler = StandardScaler()
             y_scaled = y_workload_scaler.fit_transform(y_target)
+
+    # Set up constraint helper
+    constraint_helper = ParamConstraintHelper(X_scaler, dummy_encoder)
 
     # FIXME (dva): check if these are good values for the ridge
     ridge = np.empty(X_scaled.shape[0])
@@ -298,13 +312,14 @@ def configuration_recommendation(target_data):
 
     model = GPRGD()
     model.fit(X_scaled, y_scaled, X_min, X_max, ridge)
-    res = model.predict(X_samples)
+    res = model.predict(X_samples, constraint_helper=constraint_helper)
 
     # FIXME: whether we select the min/max for the best config depends
     # on the target objective
     best_config_idx = np.argmin(res.minl.ravel())
     best_config = res.minl_conf[best_config_idx, :]
     best_config = X_scaler.inverse_transform(best_config)
+    best_config = dummy_encoder.inverse_transform(best_config)
 
     conf_map = {k: best_config[i] for i, k in enumerate(X_columnlabels)}
     conf_map_res = {}
