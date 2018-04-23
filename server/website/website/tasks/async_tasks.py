@@ -292,7 +292,9 @@ def configuration_recommendation(target_data):
             y_scaled = y_workload_scaler.fit_transform(y_target)
 
     # Set up constraint helper
-    constraint_helper = ParamConstraintHelper(X_scaler, dummy_encoder,
+    constraint_helper = ParamConstraintHelper(scaler=X_scaler,
+                                              encoder=dummy_encoder,
+                                              binary_vars=categorical_info['binary_vars'],
                                               init_flip_prob=INIT_FLIP_PROB,
                                               flip_prob_decay=FLIP_PROB_DECAY)
 
