@@ -19,10 +19,13 @@ class ParamConstraintHelper(object):
         return len(self.encoder_.n_values)
 
     def __init__(self, scaler, encoder, init_flip_prob, flip_prob_decay):
+        if 'inverse_transform' not in dir(scaler):
+            raise Exception("Scaler object must provide function inverse_transform(X)")
+        if 'transform' not in dir(scaler):
+            raise Exception("Scaler object must provide function transform(X)")
         self.scaler_ = scaler
         if encoder is not None:
             self.encoder_ = encoder.encoder
-        self.encoder_ = encoder
         self.init_flip_prob_ = init_flip_prob
         self.flip_prob_decay_ = flip_prob_decay
 

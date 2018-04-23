@@ -26,6 +26,7 @@ from website.settings import (DEFAULT_LENGTH_SCALE, DEFAULT_MAGNITUDE,
                               DEFAULT_RIDGE, DEFAULT_LEARNING_RATE,
                               DEFAULT_EPSILON, MAX_ITER, GPR_EPS,
                               DEFAULT_SIGMA_MULTIPLIER, DEFAULT_MU_MULTIPLIER)
+from website.settings import INIT_FLIP_PROB, FLIP_PROB_DECAY
 from website.types import VarType
 
 LOG = get_task_logger(__name__)
@@ -291,7 +292,9 @@ def configuration_recommendation(target_data):
             y_scaled = y_workload_scaler.fit_transform(y_target)
 
     # Set up constraint helper
-    constraint_helper = ParamConstraintHelper(X_scaler, dummy_encoder)
+    constraint_helper = ParamConstraintHelper(X_scaler, dummy_encoder,
+                                              init_flip_prob=INIT_FLIP_PROB,
+                                              flip_prob_decay=FLIP_PROB_DECAY)
 
     # FIXME (dva): check if these are good values for the ridge
     # ridge = np.empty(X_scaled.shape[0])
@@ -366,7 +369,7 @@ def configuration_recommendation(target_data):
                   mu_multiplier=DEFAULT_MU_MULTIPLIER)
     model.fit(X_scaled, y_scaled, X_min, X_max, ridge=DEFAULT_RIDGE)
     res = model.predict(X_samples, constraint_helper=constraint_helper)
-    
+
     best_config_idx = np.argmin(res.minl.ravel())
     best_config = res.minl_conf[best_config_idx, :]
     best_config = X_scaler.inverse_transform(best_config)
